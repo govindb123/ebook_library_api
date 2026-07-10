@@ -1,2 +1,19 @@
 class ApplicationController < ActionController::API
+  private
+
+  def success_response(data = nil, message = "Success", status = :ok)
+    render json: {
+      success: true,
+      message: message,
+      data: data
+    }, status: status
+  end
+
+  def error_response(message = "Something went wrong", errors = [], status = :unprocessable_entity)
+    render json: {
+      success: false,
+      message: message,
+      errors: errors
+    }, status: status
+  end
 end

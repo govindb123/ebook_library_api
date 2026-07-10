@@ -1,12 +1,14 @@
 module Api
   module V1
     class EbooksController < ApplicationController
-      def index
-        ebooks = Ebook.order(created_at: :desc)
 
-        data = ebooks.map do |ebook|
-          EbookSerializer.new(ebook).as_json
-        end
+      def index
+        ebooks = Ebook
+                  .includes(file_attachment: :blob, cover_attachment: :blob)
+                  .order(created_at: :desc)
+
+        data = ebooks.map { |ebook| EbookSerializer.new(ebook).as_json }
+
         success_response(data, "Ebooks fetched successfully")
       end
  
@@ -30,13 +32,13 @@ module Api
       end
 
       def search
-        query = params[:q].to_s.downcase
+        query = params[:q].to_s.strip.downcase
 
-        ebooks = Ebook.all.select do |ebook|
-          ebook.title.downcase.include?(query) ||
-            ebook.author.downcase.include?(query) ||
-            ebook.file.filename.to_s.downcase.include?(query)
-        end
+        ebooks = Ebook.joins(file_attachment: :blob)
+                      .where( "LOWER(ebooks.title) LIKE :query OR LOWER(ebooks.author) LIKE :query
+                       OR LOWER(active_storage_blobs.filename) LIKE :query",
+                        query: "%#{query}%"
+                      )
 
         data = ebooks.map { |ebook| EbookSerializer.new(ebook).as_json }
         success_response(data, "Search completed successfully")
@@ -51,7 +53,7 @@ module Api
       def download
         ebook = Ebook.find(params[:id])
 
-        redirect_to rails_blob_url(ebook.file, disposition: "attachment")
+        redirect_to rails_blob_path( ebook.file, disposition: "attachment", only_path: true)
       end
 
       private
@@ -62,6 +64,5 @@ module Api
 
     end
   end
-
 
 end

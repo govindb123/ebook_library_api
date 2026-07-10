@@ -4,29 +4,30 @@ module Api
       def index
         ebooks = Ebook.order(created_at: :desc)
 
-        success_response(
-          ebooks.as_json(
-            only: %i[id title author created_at]
-          ),
-          "Ebooks fetched successfully"
-        )
+        data = ebooks.map do |ebook|
+          EbookSerializer.new(ebook).as_json
+        end
+        success_response(data, "Ebooks fetched successfully")
       end
 
       def create
         ebook = Ebook.new(ebook_params)
 
         if ebook.save
-          success_response(
-            ebook.as_json(only: %i[id title author created_at]),
-            "Ebook uploaded successfully",
-            :created
-          )
+          success_response( EbookSerializer.new(ebook).as_json,
+            "Ebook uploaded successfully",:created)
         else
-          error_response(
-            "Validation failed",
-            ebook.errors.full_messages
-          )
+          error_response( "Validation failed", ebook.errors.full_messages)
         end
+      end
+
+      def show
+        ebook = Ebook.find(params[:id])
+
+        success_response(
+          EbookSerializer.new(ebook).as_json,
+          "Ebook fetched successfully"
+        )
       end
 
 

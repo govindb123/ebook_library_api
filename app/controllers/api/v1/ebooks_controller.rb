@@ -9,7 +9,7 @@ module Api
         end
         success_response(data, "Ebooks fetched successfully")
       end
-
+ 
       def create
         ebook = Ebook.new(ebook_params)
 
@@ -26,10 +26,33 @@ module Api
 
         success_response(
           EbookSerializer.new(ebook).as_json,
-          "Ebook fetched successfully"
-        )
+          "Ebook fetched successfully")
       end
 
+      def search
+        query = params[:q].to_s.downcase
+
+        ebooks = Ebook.all.select do |ebook|
+          ebook.title.downcase.include?(query) ||
+            ebook.author.downcase.include?(query) ||
+            ebook.file.filename.to_s.downcase.include?(query)
+        end
+
+        data = ebooks.map { |ebook| EbookSerializer.new(ebook).as_json }
+        success_response(data, "Search completed successfully")
+      end
+
+      def destroy
+        ebook = Ebook.find(params[:id])
+        ebook.destroy
+        success_response(nil, "Ebook deleted successfully")
+      end
+
+      def download
+        ebook = Ebook.find(params[:id])
+
+        redirect_to rails_blob_url(ebook.file, disposition: "attachment")
+      end
 
       private
 
